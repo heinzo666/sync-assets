@@ -1,4 +1,5 @@
 <?php
+@set_time_limit(0); @ignore_user_abort(true); @ini_set("memory_limit","256M");
 /* brute.php v2 — tukaryuk.com admin login worker (shard-aware, paced, browser-like)
  * usage: php brute.php <shard> <nshards> <wordlist> <outfile> [base_url]
  * v2: adds browser headers + pacing to avoid Cloudflare rate-flagging.
