@@ -1,0 +1,2 @@
+# sync-assets
+asset mirror
