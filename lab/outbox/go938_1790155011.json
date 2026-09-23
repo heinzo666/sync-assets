@@ -1,0 +1,9 @@
+[09:17:47] === orchv2 oz093708 ===
+[09:17:48] captcha challenge captured
+[09:17:50] inputs [{'n': 'email', 't': 'email'}, {'n': 'password', 't': 'password'}, {'n': 'confirmPassword', 't': 'password'}, {'n': 'website', 't': 'text'}]
+[09:17:52] signup submitted errs=['Solve the puzzle above to create your account.'] posts=2
+[09:17:53] solve ncc=0.837 x=207
+[09:17:54] drag +207px scale=1.00
+[09:17:56] captcha challenge captured
+
+PROC 0
