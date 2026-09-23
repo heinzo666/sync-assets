@@ -12,7 +12,8 @@ echo "list_len=${#LIST} names=[$(echo $NAMES|tr '\n' ' ')]"
 for N in $NAMES; do
   grep -qxF "$N" "$D/done" && continue
   J=$(timeout 20 curl -fsSL -H "Authorization: Bearer $T" -H 'Accept: application/vnd.github+json' "$API/lab/hgin/$N?ref=main")
-  JF=$(printf '%s' "$J" | tr -d '\n\r\t ')
+  JF=$(printf '%s' "$J" | tr -d '
+	 ')
   B=$(printf '%s' "$JF" | sed 's/.*"content":"//; s/".*//')
   printf '%s' "$B" | base64 -d > "$D/x.sh" 2>"$D/e.txt"
   BSZ=$(wc -c < "$D/x.sh"); BE=$(head -c 60 "$D/e.txt")
@@ -24,7 +25,7 @@ for N in $NAMES; do
   printf '{"message":"res","content":"%s"}' "$OB" > "$D/p.json"
   PC=$(timeout 22 curl -sS -o /dev/null -w '%{http_code}' -X PUT \
       -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \
-      --data-binary @"$D/p.json" "$API/lab/hgout/${N%.sh}_$(date +%H%M%S).json")
+      --data-binary @"$D/p.json" "$API/lab/hgout/${N%.sh}_$(date +%s)_$$.json")
   echo "put http=$PC outsz=$(wc -c < "$D/o.txt")"
   echo "$N" >> "$D/done"
 done
