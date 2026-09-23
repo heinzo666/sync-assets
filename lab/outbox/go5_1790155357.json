@@ -1,0 +1,9 @@
+[09:23:21] === orchv2 oz093708 ===
+[09:23:22] captcha challenge captured
+[09:23:24] inputs [{'n': 'email', 't': 'email'}, {'n': 'password', 't': 'password'}, {'n': 'confirmPassword', 't': 'password'}, {'n': 'website', 't': 'text'}]
+[09:23:25] solved-drag ncc=0.904 x=227
+[09:23:30] submitted(pre_solved=True) errs=['Too many signup attempts. Please try again in 6 minutes.']
+[09:23:31] solve ncc=0.904 x=227
+[09:23:32] drag +227px scale=1.00
+
+PROC 2
