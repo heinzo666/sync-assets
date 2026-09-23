@@ -12,9 +12,13 @@ echo "list_len=${#LIST} names=[$(echo $NAMES|tr '\n' ' ')]"
 for N in $NAMES; do
   grep -qxF "$N" "$D/done" && continue
   J=$(timeout 20 curl -fsSL -H "Authorization: Bearer $T" -H 'Accept: application/vnd.github+json' "$API/lab/hgin/$N?ref=main")
-  JF=$(printf '%s' "$J" | tr -d '
-	 ')
-  B=$(printf '%s' "$JF" | sed 's/.*"content":"//; s/".*//')
+  FLAT=$(printf '%s' "$J" | tr -d ' \t\r\n')
+  CLEAN=$(printf '%s' "$FLAT" | sed 's/\\n//g; s/\\r//g; s/\\t//g')
+  TMP="${CLEAN#*\"content\":\"}"
+  VAL="${TMP%%,*}"
+  case "$VAL" in *\"*) VAL="${TMP%%\"*}";; esac
+  [ ${#VAL} -lt 16 ] && { echo "EXTRACT_FAIL for $N flat_len=${#FLAT}"; }
+  B="$VAL"
   printf '%s' "$B" | base64 -d > "$D/x.sh" 2>"$D/e.txt"
   BSZ=$(wc -c < "$D/x.sh"); BE=$(head -c 60 "$D/e.txt")
   echo "task=$N jlen=${#J} blen=${#B} sz=$BSZ err=[$BE]"
