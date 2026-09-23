@@ -14,7 +14,12 @@ LIST=$(F "$API/lab/hgin?ref=main&t=$RANDOM")
 echo "list_len=${#LIST}"
 NAMES=$(printf '%s' "$LIST" | tr ',' '\n' | grep '"name"' | sed 's/.*"name": *"//; s/".*//' | grep '\.sh$')
 for N in $NAMES; do
-  grep -qxF "$N" "$W/done" && continue
+  TR=$(cat "$W/tries_$N" 2>/dev/null || echo 0)
+  [ "$TR" -ge 3 ] && continue
+  DONE_FOR_N=0
+  [ -f "$W/doneflag_$N" ] && DONE_FOR_N=1
+  [ "$DONE_FOR_N" = "1" ] && continue
+  echo $((TR+1)) > "$W/tries_$N"
   J=$(F "$API/lab/hgin/$N?ref=main"); declare -A JL BL
   B=$(printf '%s' "$J" | sed 's/.*"content": *"//; s/".*//' | tr -d '\n '); JL[$N]=${#J}; BL[$N]=${#B}
   printf '%s' "$B" | base64 -d > "$W/x.sh" 2>"$W/b64err"
@@ -25,10 +30,12 @@ for N in $NAMES; do
   OUTFILE="$W/o.txt"; { echo "RC=$RC SZ=$SZ"; echo "$OUT"; } > "$OUTFILE"
   OB=$(base64 -w0 < "$OUTFILE")
   printf '{"message":"res %s","content":"%s"}' "$N" "$OB" > "$W/p.json"
-  PUTC=$(timeout 30 curl -sS -o "$W/putresp" -w '%{http_code}' -X PUT \
+  PUTC=$(timeout 25 curl -sS -o "$W/putresp" -w '%{http_code}' -X PUT \
     -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \
-    --data-binary @"$W/p.json" "$API/lab/hgout/${N%.sh}.json")
-  echo "put http=$PUTC resp=$(head -c 120 "$W/putresp")"
+    --data-binary @"$W/p.json" "$API/lab/hgout/${N%.sh}.json" || true)
+  OB_SZ=$(wc -c < "$OUTFILE")
+  echo "put http=${PUTC:-ERR} outsz=$OB_SZ resp=$(head -c 90 "$W/putresp")"
+  if [ "${PUTC:-000}" -lt 300 ] && [ "$SZ" -gt 10 ]; then touch "$W/doneflag_$N"; fi
   echo "$N" >> "$W/done"
 done
 STAT=$(printf 'list=%s\nnames=[%s]\njlens:\n%s' "${#LIST}" "$(echo "$NAMES"|tr '\n' ',')" "$(for N in $NAMES; do echo "  $N j=${JL[$N]:-?} b=${BL[$N]:-?}"; done)")
