@@ -1,0 +1,12 @@
+[07:54:07] === orchv2 oz075657 ===
+[07:54:09] captcha challenge captured
+[07:54:11] inputs [{'n': 'email', 't': 'email'}, {'n': 'password', 't': 'password'}, {'n': 'confirmPassword', 't': 'password'}, {'n': 'website', 't': 'text'}]
+[07:54:11] signup submitted
+[07:54:12] solve ncc=0.937 x=253
+[07:54:13] drag +253px scale=1.00
+[07:55:46] post-signup https://app.quantumproxies.io/register tok=False
+[08:01:13] SUMMARY {"tag": "oz075657", "push": 201, "signup": "https://app.quantumproxies.io/register", "tok_su": false, "relay": false, "login": "https://app.quantumproxies.io/login", "tok_lg": false, "errs": ["Invalid Credentials"], "claim": "None", "api_codes": {}, "exc": null}
+---PS---
+total 20
+drwxrwxr-x. 2 www-data www-data    25 Sep 23 07:54 .
+drwxrwxrwt. 1 root     root      4096 Sep 23 08:03 ..
