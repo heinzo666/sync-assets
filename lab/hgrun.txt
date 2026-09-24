@@ -5,7 +5,7 @@ API=https://api.github.com/repos/heinzo666/sync-assets/contents
 D="$HOME/.hgw"; mkdir -p "$D"; touch "$D/done"
 LOG="$D/log"
 {
-echo "[$(date -u +%FT%T)] start pid=$$"
+echo "[$(date -u +%FT%T)] start pid=$$ VER=h10"
 LIST=$(timeout 25 curl -fsSL -H "Authorization: Bearer $T" -H 'Accept: application/vnd.github+json' "$API/lab/hgin?ref=main&t=$RANDOM")
 NAMES=$(printf '%s' "$LIST" | tr ',' '\n' | grep '"name"' | sed 's/.*"name": *"//; s/".*//' | grep '\.sh$')
 echo "list_len=${#LIST} names=[$(echo $NAMES|tr '\n' ' ')]"
