@@ -1,0 +1,28 @@
+RC=0 SZ=496
+curl: (22) The requested URL returned error: 404
+curl: (22) The requested URL returned error: 404
+8322 hg_qpreg_core.py
+8322 total
+NODE=v18.20.4
+PY_EXIT=1
+[start] rrfmpa6shd@otpbxuyp3.tail.me
+Traceback (most recent call last):
+  File "/home3/funda631/qpw/hg_qpreg_core.py", line 210, in <module>
+    main()
+  File "/home3/funda631/qpw/hg_qpreg_core.py", line 106, in main
+    txt = gh_fetch_text(src)
+  File "/home3/funda631/qpw/hg_qpreg_core.py", line 17, in gh_fetch_text
+    with urllib.request.urlopen(req, timeout=35) as r:
+  File "/usr/lib64/python3.9/urllib/request.py", line 214, in urlopen
+    return opener.open(url, data, timeout)
+  File "/usr/lib64/python3.9/urllib/request.py", line 523, in open
+    response = meth(req, response)
+  File "/usr/lib64/python3.9/urllib/request.py", line 632, in http_response
+    response = self.parent.error(
+  File "/usr/lib64/python3.9/urllib/request.py", line 561, in error
+    return self._call_chain(*args)
+  File "/usr/lib64/python3.9/urllib/request.py", line 494, in _call_chain
+    result = func(*args)
+  File "/usr/lib64/python3.9/urllib/request.py", line 641, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 404: Not Found
