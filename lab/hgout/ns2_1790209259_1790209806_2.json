@@ -1,0 +1,4 @@
+RC=0 SZ=1024
+[2026-09-24T00:30:05] dl start
+try https://nodejs.org/dist/v18.20.4/node-v18.20.4-linux-x64.tar.xz
+-rw-r--r-- 1 funda631 funda631 24018844 Sep 23 18:30 node.pkg
