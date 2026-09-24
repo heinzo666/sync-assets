@@ -45,8 +45,42 @@ def dec(u):
     return b64m.b64decode(u.split(",", 1)[1])
 
 
+def ncc_x_pure(bgp, pcs):
+    """No-numpy fallback: coarse L1 correlation."""
+    from PIL import Image
+    bg = Image.open(io.BytesIO(bgp)).convert("L")
+    pc = Image.open(io.BytesIO(pcs))
+    cr = pc.crop(pc.getbbox()).convert("RGBA")
+    Ww, Hh = bg.size
+    w, h = cr.size
+    bgl = list(bg.getdata())
+    prr = []
+    for i in range(w * h):
+        r, g, b, a = cr.getdata()[i]
+        prr.append((0.299*r+0.587*g+0.114*b) if a > 80 else None)
+    best, bx = -9e18, 0
+    step = max(1, (Ww - w)//160)
+    for x0 in range(0, Ww - w, step):
+        acc = 0.0
+        idx = 0
+        for y in range(h):
+            row = y * Ww
+            base = row + x0
+            for xx in range(w):
+                v = prr[idx]; idx += 1
+                if v is not None:
+                    d = bgl[base + xx] - v
+                    acc -= d*d
+        if acc > best:
+            best, bx = acc, x0
+    return float(best), int(bx)
+
+
 def ncc_x(bgp, pcs):
-    import numpy as np
+    try:
+        import numpy as np
+    except Exception:
+        return ncc_x_pure(bgp, pcs)
     from PIL import Image
     bg = np.asarray(Image.open(io.BytesIO(bgp)).convert("L"), dtype=np.float32)
     pm = Image.open(io.BytesIO(pcs))
