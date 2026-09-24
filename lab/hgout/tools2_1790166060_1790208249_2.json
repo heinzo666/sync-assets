@@ -1,0 +1,21 @@
+RC=0 SZ=498
+== paths ==
+python3=/usr/bin/python3
+python2=
+python=/usr/bin/python
+node=
+nodejs=
+npm=
+curl=/usr/bin/curl
+wget=/usr/bin/wget
+git=/usr/bin/git
+tar=/usr/bin/tar
+unzip=/usr/bin/unzip
+php=/usr/bin/php
+crontab=/usr/bin/crontab
+mysql=/usr/bin/mysql
+mysqldump=/usr/bin/mysqldump
+== alt-python ==
+== ea-node ==
+== osrelease ==
+DONE_TOOLS
