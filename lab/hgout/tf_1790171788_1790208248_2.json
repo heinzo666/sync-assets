@@ -1,0 +1,20 @@
+RC=0 SZ=336
+HOST=mx118.hostgator.mx
+python3=/usr/bin/python3
+python=/usr/bin/python
+node=MISSING
+nodejs=MISSING
+npm=MISSING
+php=/usr/bin/php
+perl=/usr/bin/perl
+ruby=MISSING
+git=/usr/bin/git
+tar=/usr/bin/tar
+unzip=/usr/bin/unzip
+jq=/usr/bin/jq
+crontab=/usr/bin/crontab
+mysql=/usr/bin/mysql
+PHP 8.3.33 (cgi-fcgi) (built: Jul 30 2026 00:00:00)
+Python 3.9.25
+/home3/funda631/.hgw/x.sh: line 7: node: command not found
+TOOLS_DONE
