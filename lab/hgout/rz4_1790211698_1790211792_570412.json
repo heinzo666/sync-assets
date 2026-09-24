@@ -1,0 +1,11 @@
+RC=0 SZ=629
+8322 hg_qpreg_core.py
+Installing collected packages: numpy
+Successfully installed numpy-1.26.4
+PIP_RC=0
+NUMPY 1.26.4
+PY_EXIT=0
+[start] rrfmpa6shd@otpbxuyp3.tail.me
+[reg] 401 {"type":"error","message":"Security check failed — reload the page and try again."}
+[push] qpres_hgt011200_1790211791.json 201
+{"tag": "hgt011200", "email": "rrfmpa6shd@otpbxuyp3.tail.me", "reg_status": 401, "reg_body": "{\"type\":\"error\",\"message\":\"Security check failed \u2014 reload the page and try again.\"}", "registered": false, "done_at": 1790211791}
