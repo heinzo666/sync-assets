@@ -1,0 +1,17 @@
+RC=0 SZ=649
+WHO uid=4470(funda631) gid=4472(funda631) groups=4472(funda631)
+/usr/bin/pip3
+/usr/bin/pip
+/usr/bin/python3
+pip 20.3.4 from /usr/local/lib/python3.9/site-packages/pip (python 3.9)
+pip 21.3.1
+FOUND:/usr/local/bin/pip3
+--net--
+200
+302 172.67.129.193
+162.241.62.132
+/dev/sde        1.5T  697G  816G  47% /home3/funda631
+      /dev/sdc1    228K  51000M  51000M             173       0       0        
+      /dev/sdc3  41116K  51000M  51000M               2       0       0        
+       /dev/sde    605M  51000M  51000M           30827       0       0        
+PIP_PROBE_DONE
