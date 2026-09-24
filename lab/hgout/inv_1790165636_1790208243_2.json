@@ -1,0 +1,29 @@
+RC=0 SZ=331
+HOST=mx118.hostgator.mx UID=uid=4470(funda631) gid=4472(funda631) groups=4472(funda631)
+python3                /usr/bin/python3
+python                 /usr/bin/python
+/usr/bin/python3       /usr/bin/python3
+/usr/local/bin/node    MISSING
+node                   MISSING
+npm                    MISSING
+php                    /usr/bin/php
+git                    /usr/bin/git
+curl                   /usr/bin/curl
+unzip                  /usr/bin/unzip
+crontab                /usr/bin/crontab
+Python 3.9.25
+/home3/funda631/.hgw/x.sh: line 4: node: command not found
+PHP 8.3.33 (cgi-fcgi) (built: Jul 30 2026 00:00:00)
+access-logs
+adargaservices.com
+asirbet231.com
+asirbet.com
+cronrun.out
+etc
+hbz.log
+hgcron.txt
+hgout.local
+hgraw.sh
+hgrun.txt
+home
+/dev/sde        1.5T  697G  816G  47% /home3/funda631
