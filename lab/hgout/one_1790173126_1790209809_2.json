@@ -1,0 +1,2 @@
+RC=0 SZ=226
+ONELINE PY=/usr/bin/python3 PYV=Python 3.9.25 ND=no_node PHP=/usr/bin/php PERL=/usr/bin/perl
