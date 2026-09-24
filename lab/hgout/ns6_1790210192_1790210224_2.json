@@ -1,0 +1,5 @@
+RC=0 SZ=538
+-rw-r--r-- 1 funda631 funda631 24018844 Sep 23 18:30 node.pkg
+NODE_VER=v18.20.4
+40 /home3/funda631/.ghr_tk
+161M	/home3/funda631/nodenv
